@@ -25,26 +25,26 @@ def _gen_chunk_indices(data_len, chunk_size):
         start += step
 
 
-def get_cl_sil(args, acti, cls_num):
+def get_cl_sil(acti, cls_num, num_speakers, sil_spk_th):
     n_chunks = len(acti)
     mean_acti = np.array([np.mean(acti[i], axis=0)
                          for i in range(n_chunks)]).flatten()
-    n = args.num_speakers
-    sil_spk_th = args.sil_spk_th
 
     cl_lst = []
     sil_lst = []
     for chunk_idx in range(n_chunks):
         if cls_num is not None:
-            if args.num_speakers > cls_num:
-                mean_acti_bi = np.array([mean_acti[n * chunk_idx + s_loc_idx]
-                                        for s_loc_idx in range(n)])
+            if num_speakers > cls_num:
+                mean_acti_bi = np.array([
+                    mean_acti[num_speakers * chunk_idx + s_loc_idx]
+                    for s_loc_idx in range(num_speakers)
+                ])
                 min_idx = np.argmin(mean_acti_bi)
-                mean_acti[n * chunk_idx + min_idx] = 0.0
+                mean_acti[num_speakers * chunk_idx + min_idx] = 0.0
 
-        for s_loc_idx in range(n):
-            a = n * chunk_idx + (s_loc_idx + 0) % n
-            b = n * chunk_idx + (s_loc_idx + 1) % n
+        for s_loc_idx in range(num_speakers):
+            a = num_speakers * chunk_idx + (s_loc_idx + 0) % num_speakers
+            b = num_speakers * chunk_idx + (s_loc_idx + 1) % num_speakers
             if mean_acti[a] > sil_spk_th and mean_acti[b] > sil_spk_th:
                 cl_lst.append((a, b))
             else:
@@ -54,7 +54,7 @@ def get_cl_sil(args, acti, cls_num):
     return cl_lst, sil_lst
 
 
-def clustering(args, svec, cls_num, ahc_dis_th, cl_lst, sil_lst):
+def clustering(svec, cls_num, ahc_dis_th, cl_lst, sil_lst, clink_dis, num_speakers):
     org_svec_len = len(svec)
     svec = np.delete(svec, sil_lst, 0)
 
@@ -64,8 +64,8 @@ def clustering(args, svec, cls_num, ahc_dis_th, cl_lst, sil_lst):
 
     distMat = distance.cdist(svec, svec, metric='euclidean')
     for cl in cl_lst:
-        distMat[cl[0], cl[1]] = args.clink_dis
-        distMat[cl[1], cl[0]] = args.clink_dis
+        distMat[cl[0], cl[1]] = clink_dis
+        distMat[cl[1], cl[0]] = clink_dis
 
     clusterer = AgglomerativeClustering(
             n_clusters=cls_num,
@@ -89,7 +89,7 @@ def clustering(args, svec, cls_num, ahc_dis_th, cl_lst, sil_lst):
     print("insert_sil_lab_idx : {}".format(insert_sil_lab_idx))
     clslab = np.insert(clusterer.labels_,
                        insert_sil_lab_idx,
-                       insert_sil_lab).reshape(-1, args.num_speakers)
+                       insert_sil_lab).reshape(-1, num_speakers)
     print("clslab : {}".format(clslab))
 
     return clslab, cls_num
@@ -102,7 +102,7 @@ def merge_act_max(act, i, j):
     return act
 
 
-def merge_acti_clslab(args, acti, clslab, cls_num):
+def merge_acti_clslab(acti, clslab, cls_num):
     sil_lab = cls_num
     for i in range(len(clslab)):
         _lab = clslab[i].reshape(-1, 1)
@@ -122,9 +122,9 @@ def merge_acti_clslab(args, acti, clslab, cls_num):
     return acti, clslab
 
 
-def stitching(args, acti, clslab, cls_num):
+def stitching(acti, clslab, cls_num, num_speakers):
     n_chunks = len(acti)
-    s_loc = args.num_speakers
+    s_loc = num_speakers
     sil_lab = cls_num
     s_tot = max(cls_num, s_loc-1)
 
@@ -276,7 +276,9 @@ def infer(args):
                 ).tolist())
             ahc_dis_th = None
         # Get cannot-link index list and silence index list
-        cl_lst, sil_lst = get_cl_sil(args, acti, cls_num)
+        cl_lst, sil_lst = get_cl_sil(
+            acti, cls_num, args.num_speakers,  args.sil_spk_th
+        )
 
         n_samples = n_chunks * args.num_speakers - len(sil_lst)
         min_n_samples = 2
@@ -286,12 +288,13 @@ def infer(args):
         if n_samples >= min_n_samples:
             # clustering (if cls_num is None, update cls_num)
             clslab, cls_num = clustering(
-                args, svec, cls_num, ahc_dis_th, cl_lst, sil_lst
+                svec, cls_num, ahc_dis_th, cl_lst, sil_lst,
+                args.clink_dis, args.num_speakers
             )
             # merge
-            acti, clslab = merge_acti_clslab(args, acti, clslab, cls_num)
+            acti, clslab = merge_acti_clslab(acti, clslab, cls_num)
             # stitching
-            out_chunks = stitching(args, acti, clslab, cls_num)
+            out_chunks = stitching(acti, clslab, cls_num, args.num_speakers)
         else:
             out_chunks = acti
 
