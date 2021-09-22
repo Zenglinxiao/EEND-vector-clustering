@@ -85,8 +85,15 @@ def batch_pit_loss(ys, ts, ilens=None):
     if ilens is None:
         ilens = [t.shape[0] for t in ts]
 
-    loss_w_labels_w_sigmas = [pit_loss(y[:ilen, :], t[:ilen, :])
-                              for (y, t, ilen) in zip(ys, ts, ilens)]
+    loss_w_labels_w_sigmas = []
+    for (y, t, ilen) in zip(ys, ts, ilens):
+        try:
+            _loss = pit_loss(y[:ilen, :], t[:ilen, :])
+        except IndexError as err:
+            print(f"[IndexError skipped] {err}")
+            continue
+        else:
+            loss_w_labels_w_sigmas.append(_loss)
     losses, _, sigmas = zip(*loss_w_labels_w_sigmas)
     loss = torch.sum(torch.stack(losses))
     n_frames = np.sum([ilen for ilen in ilens])
