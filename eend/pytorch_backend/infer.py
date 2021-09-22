@@ -352,13 +352,19 @@ def save_spkv_lab(args):
                     if torch.sum(t_chunked_t[sigma[i]]) > 0:
                         vec = outputs[i+1][0].cpu().detach().numpy()
                         lab = chunk_data[2][sigma[i]]
-                        all_outputs.append(vec)
-                        all_labels.append(lab)
+                        if lab < 0:
+                            print(f"[Warning] Found an illegal speaker label, skip")
+                        else:
+                            all_outputs.append(vec)
+                            all_labels.append(lab)
 
         orgdata_all_n_speakers = data_set.get_allnspk()
         # Generate spkidx_tbl to convert speaker ID
         spkidx_tbl = np.array([-1 for i in range(orgdata_all_n_speakers)])
         for i, idx in enumerate(list(set(all_labels))):
+            if idx < 0:
+                # idx could be -1 in case of silent speaker!
+                raise RuntimeError(f"Illegal silent speaker label exist!")
             spkidx_tbl[idx] = i
         # In this line, if speaker_tbl[_idx] == -1, the speaker whose
         # original speaker ID is _idx is excluded for training
