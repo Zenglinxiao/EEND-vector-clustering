@@ -18,6 +18,8 @@ parser.add_argument('model_save_dir',
                     help='output directory which model file will be saved in.')
 parser.add_argument('--initmodel', '-m', default='',
                     help='Initialize the model from given file')
+parser.add_argument('--resume', '-resume', action='store_true',
+                    help='Continue training the model from latest checkpoint')
 parser.add_argument('--spkv-lab', default='',
                     help='file path of speaker vector with label and\
                     speaker ID conversion table for adaptation')

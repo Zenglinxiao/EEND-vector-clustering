@@ -261,7 +261,7 @@ def train(args):
             pt.train.hooks.LRSchedulerHook(scheduler, trigger=(1, 'iteration'))
             )
 
-    trainer.train(trainloader, resume=False, device=device)
+    trainer.train(trainloader, resume=args.resume, device=device)
     print('Finished!')
 
 
