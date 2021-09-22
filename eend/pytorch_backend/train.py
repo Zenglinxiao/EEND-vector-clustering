@@ -180,16 +180,25 @@ def train(args):
             fet_arr[spkidx_tbl[spklabs[i]]] += spkvecs[i]
 
         # normalize
+        padding_idx = None
         for spk in range(spk_num):
             org = fet_arr[spk]
             norm = np.linalg.norm(org, ord=2)
-            fet_arr[spk] = org / norm
+            if norm != 0:
+                fet_arr[spk] = org / norm
+            else:
+                padding_idx = spk
+                # hack to fix case: spkidx_tbl[_idx] == -1
+                # This _idx speaker will be excluded from training
+                raise RuntimeError(f"padding_idx = {spk}")
+                # fet_arr[spk] = np.ones_like(org)
+                # print(f"padding_idx = {spk}")
 
         weight = torch.from_numpy(fet_arr.astype(np.float32)).clone()
         print("new all_n_speakers : {}".format(weight.shape[0]))
 
         print(net)
-        net.modfy_emb(weight)
+        net.modify_emb(weight, pad_id=padding_idx)
         print(net)
 
     device = [device_id for device_id in range(torch.cuda.device_count())]

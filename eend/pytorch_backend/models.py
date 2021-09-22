@@ -220,8 +220,8 @@ class TransformerDiarization(nn.Module):
         self.alpha = nn.Parameter(torch.rand(1)[0] + torch.Tensor([0.5])[0])
         self.beta = nn.Parameter(torch.rand(1)[0] + torch.Tensor([0.5])[0])
 
-    def modfy_emb(self, weight):
-        self.embed = nn.Embedding.from_pretrained(weight)
+    def modify_emb(self, weight, pad_id=None):
+        self.embed = nn.Embedding.from_pretrained(weight, padding_idx=pad_id)
 
     def forward(self, xs):
         # Since xs is pre-padded, the following code is extra,
