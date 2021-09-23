@@ -187,20 +187,19 @@ class DiarizationServeModel:
                     session + "_" + str(spk_id)
                 )
 
-    def diarize_audio(
+    def diarize_wav(
         self,
-        audio_path,
+        audio_wav,
+        sampling_rate,
         threshold,
         median,
         num_clusters=-1,
+        session="audio",
     ) -> List[str]:
-        """Diarize audio file into rttm string list.
+        """Diarize audio wav into rttm string list.
 
         This is basically a pipe of function infer and make_rttm.
         """
-        session, _ = os.path.splitext(os.path.basename(audio_path))
-        print(f"Start audio diarizing session: {session}")
-        audio_wav, sampling_rate = load_wav(audio_path)
         st_time = time.time()
         acti, svec = self._predict(audio_wav)
         eend_time = time.time()
@@ -249,6 +248,21 @@ class DiarizationServeModel:
             "rttm": ed_time - pred_time,
         }
         return rttm_list, timing
+
+    def diarize_audio(
+        self,
+        audio_path,
+        *args,
+        **kwargs,
+    ) -> List[str]:
+        """Diarize audio file into rttm string list.
+
+        This is basically a pipe of function infer and make_rttm.
+        """
+        session, _ = os.path.splitext(os.path.basename(audio_path))
+        print(f"Start audio diarizing session: {session}")
+        audio_wav, sampling_rate = load_wav(audio_path)
+        return self.diarize_wav(audio_wav, sampling_rate, *args, **kwargs, session=session)
 
 
 def _get_parser(local=True):
