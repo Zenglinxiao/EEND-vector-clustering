@@ -1,0 +1,31 @@
+# inference options
+sampling_rate: 8000
+frame_size: 200
+frame_shift: 80
+input_transform: logmel23_mn
+context_size: 7
+subsampling: 10
+chunk_size: 500
+
+# Model options
+hidden_size: 256
+transformer_encoder_n_heads: 8
+transformer_encoder_n_layers: 6
+
+num_speakers: 2
+
+# cluster speaker vector
+spkv_dim: 256
+sil_spk_th: 0.05
+clink_dis: 1e+4
+ahc_dis_th: 1.0
+# uncomment num_clusters if number of speaker in the record is known
+# num_clusters: 2
+
+# make_rttm: active decision
+threshold: 0.3
+median: 11
+
+# argument to be passed along:
+# --model_file
+# --audio_file
