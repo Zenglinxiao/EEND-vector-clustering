@@ -3,7 +3,6 @@
 import time
 import json
 import os
-from flask.globals import session
 import yamlargparse
 from flask import Flask, render_template, request, redirect, jsonify
 from eend.serve import DiarizationServeModel
