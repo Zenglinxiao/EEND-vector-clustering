@@ -50,13 +50,21 @@ def start(args):
                 gold_clusters = int(gold_clusters)
                 print(f"#speaker in audio Given: {gold_clusters}")
 
+            threshold = request.form["threshold"]
+            if not threshold:
+                threshold = args.threshold
+                print(f"Use default threshold: {threshold}")
+            else:
+                threshold = float(threshold)
+                print(f"Use provided threshold: {threshold}")
+
             if file:
                 wav, rate = sf.read(file)
                 print(f"loaded wav, rate {rate}")
                 session_id, _ = os.path.splitext(os.path.basename(file.filename))
                 rttm_list, timing = diarization_model.diarize_wav(
                     wav, rate,
-                    threshold=args.threshold,
+                    threshold=threshold,
                     median=args.median,
                     num_clusters=gold_clusters,
                     session=session_id,
